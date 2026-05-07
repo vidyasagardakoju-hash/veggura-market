@@ -1,13 +1,24 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 
-# --- DATABASE FUNCTION ---
+# --- GOOGLE SHEET CONNECTION ---
+# Paste your "Publish to web" link inside the quotes below
+SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4lFwEMAaEQJc3ogMb0gVm913bIVIXkRNjgSvCEUNWo0GSuHbj4uY0nDqlZR16BfAGlZUaxpk0GpL6/pubhtml" 
+
 def load_data():
-    conn = sqlite3.connect('veggura_market.db')
-    # Fetching all columns to support categorization and availability checks
-    df = pd.read_sql_query("SELECT id, name, category, price_per_kg, unit_type, is_available FROM inventory", conn)
-    conn.close()
+    # This converts the public link into a format pandas can read
+    csv_url = SHEET_URL.replace("/pubhtml", "/export?format=csv")
+    df = pd.read_csv(csv_url)
+    
+    # Matching the column names from your Google Sheet
+    # We rename them slightly so the rest of your code works perfectly
+    df = df.rename(columns={
+        'price': 'price_per_kg',
+        'unit': 'unit_type'
+    })
+    
+    # Convert 'TRUE'/'FALSE' from Sheets into 1/0 for your logic
+    df['is_available'] = df['is_available'].map({True: 1, False: 0, 'TRUE': 1, 'FALSE': 0})
     return df
 
 # --- APP CONFIG ---
