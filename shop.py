@@ -5,47 +5,51 @@ import pandas as pd
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4lFwEMAaEQJc3ogMb0gVm913bIVIXkRNjgSvCEUNWo0GSuHbj4uY0nDqlZR16BfAGlZUaxpk0GpL6/pubhtml"
 
 def load_data():
-    # This logic handles the /pubhtml link correctly
+    # Correctly handles the /pubhtml link for CSV export
     csv_url = SHEET_URL.replace("/pubhtml", "/pub?output=csv")
     df = pd.read_csv(csv_url)
     
     # Matching your Google Sheet column names to the code's names
-    df = df.rename(columns={
-        'price': 'price_per_kg',
-        'unit': 'unit_type'
-    })
+    df = df.rename(columns={'price': 'price_per_kg', 'unit': 'unit_type'})
     
     # Ensuring is_available is handled as 1 (True) or 0 (False)
     df['is_available'] = df['is_available'].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0, '1': 1, '0': 0})
     return df
 
+# --- APP CONFIG ---
 st.set_page_config(page_title="Veggura Market", page_icon="🥦", layout="wide")
 
 if 'cart' not in st.session_state:
     st.session_state.cart = {}
 
 st.title("🥦 Veggura Local Market")
+st.write("Fresh produce from our mandi to your home.")
 
 try:
     df = load_data()
-    target_categories = ["Leafy Vegetables", "Root Vegetables", "Vegetables"]
+    
+    # --- FIXED CATEGORIES SECTION ---
+    categories_to_display = {
+        "Leafy Vegetables": "🥬 Leafy Vegetables",
+        "Root Vegetables": "🥕 Root Vegetables",
+        "Vegetables": "🥦 General Vegetables"
+    }
 
-    for cat in target_categories:
-        cat_df = df[df['category'] == cat]
+    for cat_key, cat_label in categories_to_display.items():
+        cat_df = df[df['category'] == cat_key]
+        
         if not cat_df.empty:
-            st.header(f"🛒 {cat}")
+            st.header(cat_label)
             cols = st.columns(3)
             for index, row in cat_df.reset_index(drop=True).iterrows():
                 with cols[index % 3]:
                     name = row['name']
-                    # logic for availability
                     if row['is_available'] == 0:
                         st.write(f"### ~~{name}~~")
                         st.error("Out of Stock")
                     else:
-                        # Image logic: looking for name.jpg in your GitHub folder
                         try: 
-                            st.image(f"{name.lower()}.jpg", width=150)
+                            st.image(f"{name.lower()}.jpg", use_container_width=True)
                         except: 
                             st.write("📷 Image Pending")
                         
@@ -59,22 +63,35 @@ try:
                                 st.toast(f"Added {name}!")
             st.write("---")
 
-    # --- SIDEBAR CART ---
+    # --- SIDEBAR CART & WHATSAPP ---
     st.sidebar.header("📋 Your Order")
     total_bill = 0
+    order_text = "New Order from Veggura:%0A"
+
     if not st.session_state.cart:
-        st.sidebar.write("Cart is empty.")
+        st.sidebar.write("Your cart is empty.")
     else:
-        for item, d in st.session_state.cart.items():
-            st.sidebar.write(f"**{item}**: {d['qty']} {d['unit']} - ₹{d['total']}")
-            total_bill += d['total']
+        for item, details in st.session_state.cart.items():
+            st.sidebar.write(f"**{item}**: {details['qty']} {details['unit']} - ₹{details['total']}")
+            total_bill += details['total']
+            order_text += f"- {item}: {details['qty']} {details['unit']} (₹{details['total']})%0A"
         
-        st.sidebar.write(f"### Total: ₹{total_bill}")
+        st.sidebar.write("---")
+        st.sidebar.write(f"### Total Bill: ₹{total_bill}")
         
-        # WhatsApp Integration (Replace with your number)
+        # Replace with your phone number (e.g., 919876543210)
         my_phone = "91XXXXXXXXXX" 
-        wa_link = f"https://wa.me/{my_phone}?text=New Order from Veggura"
-        st.sidebar.markdown(f'<a href="{wa_link}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Order on WhatsApp</button></a>', unsafe_allow_html=True)
+        
+        order_text += f"%0A---%0ATotal Bill: ₹{total_bill}"
+        wa_link = f"https://wa.me/{my_phone}?text={order_text}"
+        
+        st.sidebar.markdown(f'''
+            <a href="{wa_link}" target="_blank" style="text-decoration: none;">
+                <div style="background-color: #25D366; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;">
+                    Confirm Order on WhatsApp
+                </div>
+            </a>
+        ''', unsafe_allow_html=True)
 
 except Exception as e:
-    st.error(f"Waiting for Data... (Error: {e})")
+    st.error(f"⚠️ App Error: {e}")
