@@ -1,139 +1,112 @@
 import streamlit as st
 import pandas as pd
+import urllib.parse
 
-# --- GOOGLE SHEET CONNECTION ---
-SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4lFwEMAaEQJc3ogMb0gVm913bIVIXkRNjgSvCEUNWo0GSuHbj4uY0nDqlZR16BfAGlZUaxpk0GpL6/pubhtml"
+# --- 1. GOOGLE SHEET CONNECTION ---
+# Replace the URL below with your "Publish to Web" link from Google Sheets
+SHEET_URL = "YOUR_PUBLISHED_GOOGLE_SHEET_URL_HERE"
 
 def load_data():
-    csv_url = SHEET_URL.replace("/pubhtml", "/pub?output=csv")
-    df = pd.read_csv(csv_url)
-    # Standardize column names
-    df = df.rename(columns={'price': 'price_per_kg', 'unit': 'unit_type'})
-    # Convert TRUE/FALSE to 1/0
-    df['is_available'] = df['is_available'].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0, '1': 1, '0': 0})
-    return df
+    try:
+        # Converts the public link into a CSV download link for Pandas
+        csv_url = SHEET_URL.replace("/pubhtml", "/export?format=csv")
+        return pd.read_csv(csv_url)
+    except Exception as e:
+        st.error("Connection Error: Please check if your Google Sheet is 'Published to web'.")
+        return None
 
-# --- APP CONFIG ---
+# --- 2. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Veggura Market", page_icon="🥦", layout="wide")
 
-# Initialize Session States
-if 'page' not in st.session_state:
-    st.session_state.page = "home"
+# Initialize the shopping cart in the session
 if 'cart' not in st.session_state:
     st.session_state.cart = {}
 
-# Load Data
-try:
-    df = load_data()
-except Exception as e:
-    st.error("Wait a moment... the market is refreshing.")
-    st.stop()
+st.title("🥦 Veggura Local Market")
+st.markdown("---")
 
-# --- STEP 1: CATEGORY HOME SCREEN ---
-if st.session_state.page == "home":
-    st.title("🥦 Veggura Local Market")
-    st.subheader("Select a category to view fresh produce:")
-    st.write("---")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("<h1 style='text-align: center;'>🥬</h1>", unsafe_allow_html=True)
-        if st.button("Leafy Vegetables", use_container_width=True):
-            st.session_state.page = "Leafy Vegetables"
-            st.rerun()
-            
-    with col2:
-        st.markdown("<h1 style='text-align: center;'>🥕</h1>", unsafe_allow_html=True)
-        if st.button("Root Vegetables", use_container_width=True):
-            st.session_state.page = "Root Vegetables"
-            st.rerun()
-            
-    with col3:
-        st.markdown("<h1 style='text-align: center;'>🍅</h1>", unsafe_allow_html=True)
-        if st.button("General Vegetables", use_container_width=True):
-            st.session_state.page = "General Vegetables"
-            st.rerun()
+# --- 3. LOAD & DISPLAY PRODUCTS ---
+df = load_data()
 
-# --- STEP 2: PRODUCT LISTING PAGE ---
-else:
-    selected_cat = st.session_state.page
-    
-    if st.button("⬅️ Back to Categories"):
-        st.session_state.page = "home"
-        st.rerun()
+if df is not None:
+    # Categories as per your business layout
+    target_categories = ["Leafy Vegetables", "Root Vegetables", "Vegetables"]
+
+    for cat in target_categories:
+        # Filter data for this specific category
+        cat_df = df[df['category'] == cat]
         
-    st.title(f"🛒 {selected_cat}")
-    
-    cat_df = df[df['category'] == selected_cat]
-    
-    if cat_df.empty:
-        st.warning(f"No items currently in {selected_cat}.")
-    else:
-        cols = st.columns(3)
-        for idx, row in cat_df.reset_index(drop=True).iterrows():
-            with cols[idx % 3]:
-                # Load Image
-                try:
-                    st.image(f"{row['name'].lower()}.jpg", use_container_width=True)
-                except:
-                    st.write("📷 Photo Coming Soon")
-                
-                st.subheader(row['name'])
-                
-                if row['is_available'] == 0:
-                    st.error("Out of Stock")
-                else:
-                    st.info(f"₹{row['price_per_kg']} per {row['unit_type']}")
+        if not cat_df.empty:
+            st.header(f"🛒 {cat}")
+            
+            # Create a 3-column grid for products
+            cols = st.columns(3)
+            
+            for index, row in cat_df.reset_index(drop=True).iterrows():
+                with cols[index % 3]:
+                    name = row['name']
+                    price = row['price']
+                    unit = row['unit']
+                    is_available = row['is_available']
                     
-                    # --- SMART QUANTITY STEP ---
-                    # Bunches/Pieces move by 1.0 | kg moves by 0.5
-                    if row['unit_type'].lower() in ["bunch", "piece", "dozen"]:
-                        my_step = 1.0
-                        my_min = 0.0
+                    # If item is unavailable, show it as grayed out
+                    if not is_available:
+                        st.write(f"### ~~{name}~~")
+                        st.error("Out of Stock")
                     else:
-                        my_step = 0.5
-                        my_min = 0.0
-                    
-                    qty = st.number_input(f"Qty ({row['unit_type']})", min_value=my_min, step=my_step, key=f"buy_{row['name']}")
-                    
-                    if st.button(f"Add {row['name']}", key=f"btn_{row['name']}"):
-                        if qty > 0:
-                            st.session_state.cart[row['name']] = {
-                                "qty": qty, 
-                                "total": qty * row['price_per_kg'], 
-                                "unit": row['unit_type']
-                            }
-                            st.toast(f"Added {row['name']}!")
+                        # Display Product Image (looks for name.jpg in your GitHub repo)
+                        try:
+                            st.image(f"{name.lower()}.jpg", width=180)
+                        except:
+                            st.write("📷 Image Pending")
+                        
+                        st.write(f"### {name}")
+                        st.info(f"₹{price} per {unit}")
+                        
+                        # Quantity Selector
+                        qty = st.number_input(f"Quantity ({unit})", min_value=0.0, step=0.5, key=f"qty_{name}")
+                        
+                        if st.button(f"Add {name} to Cart", key=f"btn_{name}"):
+                            if qty > 0:
+                                st.session_state.cart[name] = {
+                                    "qty": qty, 
+                                    "total": qty * price, 
+                                    "unit": unit
+                                }
+                                st.toast(f"Added {name} to cart!")
+            st.markdown("---")
 
-# --- SIDEBAR CART ---
-st.sidebar.header("📋 Your Order")
+# --- 4. SIDEBAR CART & WHATSAPP ORDERING ---
+st.sidebar.header("📋 Your Order Summary")
+
 if not st.session_state.cart:
-    st.sidebar.write("Your cart is empty.")
+    st.sidebar.write("Your cart is empty. Add some fresh veggies!")
 else:
     total_bill = 0
-    order_summary = "New Order from Veggura:%0A"
+    # Text for the WhatsApp message
+    order_details = "Hello Veggura! I want to place an order:\n\n"
     
     for item, d in st.session_state.cart.items():
-        st.sidebar.write(f"**{item}**: {d['qty']} {d['unit']} - ₹{d['total']}")
+        line = f"• {item}: {d['qty']} {d['unit']} - ₹{d['total']}\n"
+        st.sidebar.write(line)
+        order_details += line
         total_bill += d['total']
-        order_summary += f"- {item}: {d['qty']} {d['unit']} (₹{d['total']})%0A"
     
-    st.sidebar.write("---")
-    st.sidebar.write(f"### Total: ₹{total_bill}")
-    
-    # REPLACING WITH YOUR NUMBER
-    my_phone = "91XXXXXXXXXX" 
-    
-    wa_link = f"https://wa.me/{my_phone}?text={order_summary}%0ATotal: ₹{total_bill}"
-    st.sidebar.markdown(f'''
-        <a href="{wa_link}" target="_blank" style="text-decoration: none;">
-            <div style="background-color: #25D366; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;">
-                Confirm Order on WhatsApp
-            </div>
-        </a>
-    ''', unsafe_allow_html=True)
-    
+    st.sidebar.subheader(f"Total: ₹{total_bill}")
+    order_details += f"\n*Grand Total: ₹{total_bill}*"
+
+    # Clear Cart Button
     if st.sidebar.button("🗑️ Clear Cart"):
         st.session_state.cart = {}
         st.rerun()
+
+    # WhatsApp Link Generation
+    # REPLACE THE NUMBER BELOW WITH YOUR 10-DIGIT NUMBER (Keep the 91)
+    MY_PHONE_NUMBER = "91XXXXXXXXXX" 
+    encoded_msg = urllib.parse.quote(order_details)
+    wa_link = f"https://wa.me/{MY_PHONE_NUMBER}?text={encoded_msg}"
+    
+    st.sidebar.link_button("🚀 Send Order to WhatsApp", wa_link, use_container_width=True)
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Managed by Dakoju Vasantha Vidya Sagar")
