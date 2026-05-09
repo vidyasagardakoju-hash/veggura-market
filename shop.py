@@ -4,7 +4,7 @@ import urllib.parse
 
 # --- 1. GOOGLE SHEET CONNECTION ---
 # Replace the URL below with your "Publish to Web" link from Google Sheets
-SHEET_URL = "YOUR_PUBLISHED_GOOGLE_SHEET_URL_HERE"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4lFwEMAaEQJc3ogMb0gVm913bIVIXkRNjgSvCEUNWo0GSuHbj4uY0nDqlZR16BfAGlZUaxpk0GpL6/pubhtml"
 
 def load_data():
     try:
@@ -102,7 +102,7 @@ else:
 
     # WhatsApp Link Generation
     # REPLACE THE NUMBER BELOW WITH YOUR 10-DIGIT NUMBER (Keep the 91)
-    MY_PHONE_NUMBER = "91XXXXXXXXXX" 
+    MY_PHONE_NUMBER = "919948807525" 
     encoded_msg = urllib.parse.quote(order_details)
     wa_link = f"https://wa.me/{MY_PHONE_NUMBER}?text={encoded_msg}"
     
