@@ -42,7 +42,6 @@ if df is not None:
             cols = st.columns(3)
             for index, row in cat_df.reset_index(drop=True).iterrows():
                 with cols[index % 3]:
-                    # --- NEW CONTAINER ADDED HERE ---
                     with st.container(border=True):
                         name = row['name']
                         price = row['price']
@@ -53,7 +52,6 @@ if df is not None:
                             st.write(f"### ~~{name}~~")
                             st.error("Out of Stock")
                         else:
-                            # --- IMAGE LOGIC (Kept exactly as yours) ---
                             clean_name = name.lower().strip()
                             underscore_name = clean_name.replace(' ', '_')
                             possible_files = [f"{underscore_name}.jpg", f"{clean_name}.jpg"]
@@ -62,6 +60,8 @@ if df is not None:
                             for img_file in possible_files:
                                 if not image_found:
                                     try:
+                                        # --- THE FIX: FIXED HEIGHT & USE_CONTAINER_WIDTH ---
+                                        # This keeps all boxes aligned even if image sizes differ
                                         st.image(img_file, use_container_width=True)
                                         image_found = True
                                     except:
@@ -70,7 +70,10 @@ if df is not None:
                             if not image_found:
                                 st.caption(f"📷 Image matching '{underscore_name}.jpg' not found")
                             
-                            st.write(f"### {name}")
+                            # --- CSS HACK TO ALIGN TITLES ---
+                            # This ensures names start at the same level
+                            st.markdown(f"<div style='height: 60px; overflow: hidden;'><h3>{name}</h3></div>", unsafe_allow_html=True)
+                            
                             st.info(f"₹{price} / {unit}")
                             
                             qty = st.number_input(f"Amount", min_value=0.0, step=0.5, key=f"q_{name}")
@@ -96,7 +99,7 @@ if st.session_state.cart:
     st.sidebar.subheader(f"Total: ₹{total_bill}")
     
     # --- UPDATE YOUR NUMBER HERE ---
-    MY_NUMBER = "919948807525" 
+    MY_NUMBER = "91XXXXXXXXXX" 
     
     final_msg = urllib.parse.quote(order_msg + f"\n*Grand Total: ₹{total_bill}*")
     wa_url = f"https://wa.me/{MY_NUMBER}?text={final_msg}"
