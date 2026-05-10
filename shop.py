@@ -26,12 +26,15 @@ st.title("🥦 Veggura Local Market")
 st.markdown("---")
 
 # --- 3. LOAD & DISPLAY PRODUCTS ---
-df = load_data()
-
-if df is not None:
-    # Categories as per your business layout
-    # Change this line in your shop.py:
-    target_categories = ["Leafy Vegetables", "Root Vegetables", "General Vegetables"]
+def load_data():
+    try:
+        # Use the /export?format=csv version to ensure pandas can read it
+        csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4lFwEMAaEQJc3ogMb0gVm913bIVIXkRNjgSvCEUNWo0GSuHbj4uY0nDqlZR16BfAGlZUaxpk0GpL6/export?format=csv"
+        df = pd.read_csv(csv_url)
+        return df
+    except Exception as e:
+        st.error(f"Connection Error: {e}")
+        return None
 
     for cat in target_categories:
         # Filter data for this specific category
