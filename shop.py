@@ -21,6 +21,25 @@ def load_data():
 # --- 2. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Veggura Market", page_icon="🥦", layout="wide")
 
+# --- CUSTOM CSS FOR PERFECT ALIGNMENT ---
+st.markdown("""
+    <style>
+    /* This forces all images to be exactly 200px tall and fills the width */
+    [data-testid="stImage"] img {
+        height: 200px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+    /* This makes sure long names don't push the buttons down */
+    .veg-name {
+        height: 50px;
+        line-height: 25px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 if 'cart' not in st.session_state:
     st.session_state.cart = {}
 
@@ -42,6 +61,7 @@ if df is not None:
             cols = st.columns(3)
             for index, row in cat_df.reset_index(drop=True).iterrows():
                 with cols[index % 3]:
+                    # Using border=True to keep each item in a clean box
                     with st.container(border=True):
                         name = row['name']
                         price = row['price']
@@ -52,6 +72,7 @@ if df is not None:
                             st.write(f"### ~~{name}~~")
                             st.error("Out of Stock")
                         else:
+                            # --- IMAGE LOGIC ---
                             clean_name = name.lower().strip()
                             underscore_name = clean_name.replace(' ', '_')
                             possible_files = [f"{underscore_name}.jpg", f"{clean_name}.jpg"]
@@ -60,19 +81,17 @@ if df is not None:
                             for img_file in possible_files:
                                 if not image_found:
                                     try:
-                                        # --- THE FIX: FIXED HEIGHT & USE_CONTAINER_WIDTH ---
-                                        # This keeps all boxes aligned even if image sizes differ
                                         st.image(img_file, use_container_width=True)
                                         image_found = True
                                     except:
                                         continue
 
                             if not image_found:
-                                st.caption(f"📷 Image matching '{underscore_name}.jpg' not found")
+                                # Placeholder box to keep height consistent even if image is missing
+                                st.markdown("<div style='height:200px; background-color:#333; border-radius:5px; display:flex; align-items:center; justify-content:center;'>📷 Image Needed</div>", unsafe_allow_html=True)
                             
-                            # --- CSS HACK TO ALIGN TITLES ---
-                            # This ensures names start at the same level
-                            st.markdown(f"<div style='height: 60px; overflow: hidden;'><h3>{name}</h3></div>", unsafe_allow_html=True)
+                            # --- PERFECTLY ALIGNED TITLES ---
+                            st.markdown(f"<div class='veg-name'><h3>{name}</h3></div>", unsafe_allow_html=True)
                             
                             st.info(f"₹{price} / {unit}")
                             
