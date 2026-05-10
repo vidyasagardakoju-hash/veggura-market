@@ -70,7 +70,7 @@ if st.session_state.cart:
     st.sidebar.subheader(f"Total: ₹{total_bill}")
     
     # REPLACE WITH YOUR REAL NUMBER
-    MY_PHONE_NUMBER = "91XXXXXXXXXX" 
+    MY_PHONE_NUMBER = "919948807525" 
     wa_link = f"https://wa.me/{MY_PHONE_NUMBER}?text={urllib.parse.quote(order_details + f'Total: ₹{total_bill}')}"
     st.sidebar.link_button("🚀 Order on WhatsApp", wa_link, use_container_width=True)
 else:
