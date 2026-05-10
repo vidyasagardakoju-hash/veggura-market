@@ -56,15 +56,25 @@ if df is not None:
                         st.write(f"### ~~{name}~~")
                         st.error("Out of Stock")
                     else:
-                        # --- SMART IMAGE LOGIC ---
-                        # Converts 'Black Brinjals' -> 'black_brinjals.jpg'
-                        clean_name = name.lower().replace(' ', '_')
-                        img_file = f"{clean_name}.jpg"
-                        
-                        try:
-                            st.image(img_file, use_container_width=True)
-                        except:
-                            st.caption(f"📷 Image matching '{img_file}' not found on GitHub")
+                       # --- SUPER SMART IMAGE LOGIC ---
+                       # This version tries BOTH: 'black_brinjals.jpg' AND 'black brinjals.jpg'
+                        clean_name = name.lower().strip()
+                        underscore_name = clean_name.replace(' ', '_')
+
+                        # List of possible names the computer might find
+                        possible_files = [f"{underscore_name}.jpg", f"{clean_name}.jpg"]
+
+                        image_found = False
+                        for img_file in possible_files:
+                            if not image_found:
+                                try:
+                                    st.image(img_file, use_container_width=True)
+                                    image_found = True
+                                except:
+                                    continue
+
+                        if not image_found:
+                            st.caption(f"📷 Image matching '{underscore_name}.jpg' not found")
                             
                         st.write(f"### {name}")
                         st.info(f"₹{price} / {unit}")
