@@ -118,7 +118,7 @@ if st.session_state.cart:
     st.sidebar.subheader(f"Total: ₹{total_bill}")
     
     # --- UPDATE YOUR NUMBER HERE ---
-    MY_NUMBER = "91XXXXXXXXXX" 
+    MY_NUMBER = "919948807525" 
     
     final_msg = urllib.parse.quote(order_msg + f"\n*Grand Total: ₹{total_bill}*")
     wa_url = f"https://wa.me/{MY_NUMBER}?text={final_msg}"
