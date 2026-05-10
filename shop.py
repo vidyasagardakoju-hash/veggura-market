@@ -1,5 +1,5 @@
 import streamlit as st
-import pd
+import pandas as pd  # Fixed this line
 import urllib.parse
 
 # --- 1. DATA CONNECTION ---
@@ -24,16 +24,18 @@ st.set_page_config(page_title="Veggura Market", page_icon="🥦", layout="wide")
 # --- CUSTOM CSS FOR PERFECT ALIGNMENT ---
 st.markdown("""
     <style>
+    /* Forces all images to be the same height */
     [data-testid="stImage"] img {
-        height: 200px;
+        height: 220px;
         object-fit: cover;
-        border-radius: 5px;
+        border-radius: 8px;
     }
+    /* Fixes height for the vegetable names */
     .veg-name {
-        height: 50px;
-        line-height: 25px;
-        overflow: hidden;
-        margin-bottom: 10px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -59,6 +61,7 @@ if df is not None:
             cols = st.columns(3)
             for index, row in cat_df.reset_index(drop=True).iterrows():
                 with cols[index % 3]:
+                    # Using border=True for neat containers
                     with st.container(border=True):
                         name = row['name']
                         price = row['price']
@@ -69,6 +72,7 @@ if df is not None:
                             st.write(f"### ~~{name}~~")
                             st.error("Out of Stock")
                         else:
+                            # Image Logic
                             clean_name = name.lower().strip()
                             underscore_name = clean_name.replace(' ', '_')
                             possible_files = [f"{underscore_name}.jpg", f"{clean_name}.jpg"]
@@ -83,8 +87,9 @@ if df is not None:
                                         continue
 
                             if not image_found:
-                                st.markdown("<div style='height:200px; background-color:#333; border-radius:5px; display:flex; align-items:center; justify-content:center;'>📷 Image Needed</div>", unsafe_allow_html=True)
+                                st.markdown("<div style='height:220px; background-color:#f0f0f0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#888;'>📷 Photo Coming</div>", unsafe_allow_html=True)
                             
+                            # Aligned Name and Info
                             st.markdown(f"<div class='veg-name'><h3>{name}</h3></div>", unsafe_allow_html=True)
                             st.info(f"₹{price} / {unit}")
                             
@@ -95,11 +100,11 @@ if df is not None:
                                     st.toast(f"✅ Added {name}")
             st.markdown("---")
 
-# --- 4. SIDEBAR, LOCATION & WHATSAPP ---
-st.sidebar.header("📋 Your Order Summary")
+# --- 4. SIDEBAR, ADDRESS & WHATSAPP ---
+st.sidebar.header("📋 Order Summary")
 
-# NEW: Delivery Address Input
-address = st.sidebar.text_area("📍 Delivery Address", placeholder="Enter your house number, street, and area...")
+# Delivery Address Input
+address = st.sidebar.text_area("📍 Delivery Address", placeholder="House No, Street, Area...")
 
 if st.session_state.cart:
     total_bill = 0
@@ -112,32 +117,28 @@ if st.session_state.cart:
         total_bill += d['total']
     
     st.sidebar.subheader(f"Total: ₹{total_bill}")
-    
-    # Add address to the final message
     order_msg += f"\n*Grand Total: ₹{total_bill}*"
+
     if address:
         order_msg += f"\n\n📍 *Delivery Location:*\n{address}"
-    else:
-        order_msg += f"\n\n(No address provided)"
-
-    # --- UPDATE YOUR NUMBER HERE ---
+    
+    # PUT YOUR REAL 10-DIGIT NUMBER HERE
     MY_NUMBER = "91XXXXXXXXXX" 
     
     final_msg = urllib.parse.quote(order_msg)
     wa_url = f"https://wa.me/{MY_NUMBER}?text={final_msg}"
     
-    # Disable button if address is empty to make sure you get a location!
     if not address:
-        st.sidebar.warning("Please enter your address to order.")
-        st.sidebar.button("🚀 Send Order to WhatsApp", disabled=True, use_container_width=True)
+        st.sidebar.warning("Please enter your address first.")
+        st.sidebar.button("🚀 Order via WhatsApp", disabled=True, use_container_width=True)
     else:
-        st.sidebar.link_button("🚀 Send Order to WhatsApp", wa_url, use_container_width=True)
+        st.sidebar.link_button("🚀 Order via WhatsApp", wa_url, use_container_width=True)
     
     if st.sidebar.button("Clear Cart", use_container_width=True):
         st.session_state.cart = {}
         st.rerun()
 else:
-    st.sidebar.write("Your cart is empty.")
+    st.sidebar.write("Cart is empty.")
 
 st.sidebar.markdown("---")
 st.sidebar.caption("Dakoju Vasantha Vidya Sagar")
