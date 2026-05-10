@@ -30,7 +30,8 @@ df = load_data()
 
 if df is not None:
     # Categories as per your business layout
-    target_categories = ["Leafy Vegetables", "Root Vegetables", "Vegetables"]
+    # Change this line in your shop.py:
+    target_categories = ["Leafy Vegetables", "Root Vegetables", "General Vegetables"]
 
     for cat in target_categories:
         # Filter data for this specific category
